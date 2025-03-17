@@ -37,7 +37,11 @@ export const myFacturePdf = (facture, client) => {
   const amaya = JSON.parse(data);
   if (data) {
     pdf.setProperties({
-      title: "FACTURE ",
+      title: "FACTURE " + facture.num,
+      subject: "Facture " + facture.name,
+      author: amaya.entreprise.name,
+      keywords: "facture, " + client.shortName,
+      creator: "Amaya Facture"
     });
     
     const tva = (parseFloat(facture.ht)*0.2).toFixed(2);
@@ -83,6 +87,30 @@ export const myFacturePdf = (facture, client) => {
     pdf.setFontSize(44);
     pdf.setFont("OpenSans-Bold");
     pdf.text("FACTURE", 78, 41);
+
+    //-----------------------------------------------
+    // Statut de la facture (si validée ou avoir)
+    //-----------------------------------------------
+    if (facture.status === 'validée') {
+      pdf.setFontSize(12);
+      pdf.setTextColor(125, 187, 119); // Vert
+      pdf.text("VALIDÉE", 173, 41);
+
+      // Date de validation si disponible
+      if (facture.dateValidation) {
+        pdf.setFontSize(8);
+        pdf.setFont("OpenSans-Regular");
+        const dateValid = new Date(facture.dateValidation);
+        pdf.text(`Le ${dateValid.toLocaleDateString()}`, 173, 45);
+      }
+    } else if (facture.factureOriginale) {
+      pdf.setFontSize(12);
+      pdf.setTextColor(255, 140, 0); // Orange
+      pdf.text("AVOIR", 173, 41);
+    }
+    
+    // Retour à la couleur normale
+    pdf.setTextColor(128, 128, 128);
 
     //-----------------------------------------------
     // A L'INTENTION DE
@@ -189,7 +217,7 @@ export const myFacturePdf = (facture, client) => {
     //$pdf->SetTextColor(60,60,60);
     //-----------------------------------------------
     //-----------------------------------------------
-    let yp =0;
+    let yp = 0;
     facture.lignes.map(p => {
       pdf.setTextColor(60, 60, 60);
       pdf.setFontSize(9);
@@ -275,7 +303,6 @@ export const myFacturePdf = (facture, client) => {
    // pdf.text(addSpace("120000.00"), 155.5, 197);
    //pdf.autoTable({body:["test"]});
 
-
    autoTable(pdf, {
     startY:192,
     tableWidth:24,
@@ -288,6 +315,67 @@ export const myFacturePdf = (facture, client) => {
     ],
    
   })
+
+  //-----------------------------------------------
+  // AJOUT DE LA SIGNATURE ELECTRONIQUE SI VALIDÉE
+  //-----------------------------------------------
+  if (facture.status === 'validée' && facture.signature) {
+    // Création d'un cadre pour la signature
+    pdf.setDrawColor(125, 187, 119); // Vert
+    pdf.setLineWidth(0.5);
+    
+    // Position et dimensions du cadre
+    const sigX = 10;
+    const sigY = 205;
+    const sigWidth = 90;
+    const sigHeight = 25;
+    
+    // Dessiner le cadre
+    pdf.rect(sigX, sigY, sigWidth, sigHeight);
+    
+    // Titre de la section
+    pdf.setTextColor(125, 187, 119); // Vert
+    pdf.setFontSize(10);
+    pdf.setFont("OpenSans-Bold");
+    pdf.text("VALIDATION ÉLECTRONIQUE", sigX + 5, sigY + 5);
+    
+    // Informations sur le signataire
+    pdf.setTextColor(60, 60, 60);
+    pdf.setFontSize(8);
+    pdf.setFont("OpenSans-Regular");
+    
+    if (facture.signataireName) {
+      pdf.text(`Signataire: ${facture.signataireName}`, sigX + 5, sigY + 10);
+    }
+    
+    if (facture.dateValidation) {
+      const dateValid = new Date(facture.dateValidation);
+      pdf.text(
+        `Date: ${dateValid.toLocaleDateString()} à ${dateValid.toLocaleTimeString()}`, 
+        sigX + 5, 
+        sigY + 15
+      );
+    }
+    
+    if (facture.signatureNotes) {
+      pdf.text(`Notes: ${facture.signatureNotes}`, sigX + 5, sigY + 20);
+    }
+    
+    // Ajout de l'image de signature
+    try {
+      pdf.addImage(
+        facture.signature,  // données base64
+        'PNG',
+        sigX + 55,         // Position X 
+        sigY + 5,          // Position Y
+        30,                // Largeur
+        15                 // Hauteur
+      );
+    } catch (error) {
+      console.error("Erreur lors de l'ajout de la signature:", error);
+    }
+  }
+  
   pdf.setFont("OpenSans-Bold");
   pdf.setFontSize(9);
   pdf.setTextColor(128, 128, 128);
@@ -311,19 +399,32 @@ export const myFacturePdf = (facture, client) => {
 
   
     pdf.setFillColor(125,187,119);
-   pdf.rect(0,278,179,1,'F');
-   pdf.addImage(logo1, "JPEG", 9, 282 , 14, 14);
+    pdf.rect(0,278,179,1,'F');
+    pdf.addImage(logo1, "JPEG", 9, 282 , 14, 14);
 
 
 
-   pdf.addImage(imageFactice, "PNG", 0, 0, 210, 297);
-   // pdf.setFontSize(122);
-   //   pdf.setTextColor(252,212,212);
-   // pdf.text('F A C T I C E',30,250,{angle:45});
+    pdf.addImage(imageFactice, "PNG", 0, 0, 210, 297);
+    // pdf.setFontSize(122);
+    //   pdf.setTextColor(252,212,212);
+    // pdf.text('F A C T I C E',30,250,{angle:45});
 
     //-----------------------------------------------
-    //pdf.save(`Facture.pdf`);
-    pdf.output('dataurlnewwindow');
-    // console.log( pdf.getFontList() )
-}
+    // Ouvrir directement le PDF
+    const pdfOutput = pdf.output('dataurlstring');
+    
+    // Ouvrir le PDF dans un nouvel onglet
+    const newWindow = window.open();
+    if (newWindow) {
+      newWindow.document.write(
+        `<iframe width="100%" height="100%" src="${pdfOutput}"></iframe>`
+      );
+    } else {
+      // Si le navigateur bloque l'ouverture d'un nouvel onglet
+      alert("Votre navigateur a bloqué l'ouverture du PDF. Veuillez vérifier vos paramètres de blocage des popups.");
+      
+      // Fallback: ouvrir le PDF dans la fenêtre actuelle
+      window.location.href = pdfOutput;
+    }
+  }
 };

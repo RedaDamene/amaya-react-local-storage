@@ -1,41 +1,51 @@
-import { useEffect, useState } from "react";
-import Nav from "../components/Nav.jsx";
-import Footer from "../components/Footer.jsx";
-
-
-import { Link } from "react-router-dom";
-
+import { useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import {myFacturePdf} from "../components/pdf/myFacturePdf.js";
-export default function facturePDF() {
-  const navigate = useNavigate();
+import { myFacturePdf } from "../components/pdf/myFacturePdf";
+
+export default function FacturePdf() {
   const { id } = useParams();
-  const [facture, setFacture] = useState({});
-  const [client, setClient] = useState({});
+  const navigate = useNavigate();
 
   useEffect(() => {
     const data = localStorage.getItem("amaya");
     if (data) {
-      const amaya2 = JSON.parse(data);
-      const obj = amaya2.facture.find((f) => f.id == id);
-      const cl = amaya2.client.find((c) => c.id == obj.client);
-      setFacture(obj);
-      setClient(cl);
-    } else {
-      // redirige
-    }
-  }, []);
-const generatePDF=()=>{
+      const amaya = JSON.parse(data);
+      const facture = amaya.facture.find((f) => f.id == id);
 
-  myFacturePdf(facture,client);
-}
+      if (facture) {
+        // Récupérer le client associé à la facture
+        const client = amaya.client.find((client)=>client.id==facture.client)
+        
+        if (client) {
+          // Générer et ouvrir directement le PDF
+          myFacturePdf(facture, client);
+          
+          // Rediriger vers la liste des factures après un court délai
+          // pour éviter que la page reste vide
+          setTimeout(() => {
+            navigate("/facture");
+          }, 500);
+        } else {
+          alert("Client introuvable");
+          navigate("/facture");
+        }
+      } else {
+        alert("Facture introuvable");
+        navigate("/facture");
+      }
+    } else {
+      alert("Données introuvables");
+      navigate("/facture");
+    }
+  }, [id, navigate]);
+
+  // Cette page ne sera visible que brièvement avant la redirection
   return (
-    <>
-      <Nav active={"facture"}></Nav>
-      
-        <h1>{id}</h1>
-        <button onClick={generatePDF}>PDF</button>
-      <Footer></Footer>
-    </>
+    <div className="container text-center p-5">
+      <h2>Génération du PDF en cours...</h2>
+      <div className="spinner-border mt-3" role="status">
+        <span className="visually-hidden">Chargement...</span>
+      </div>
+    </div>
   );
 }

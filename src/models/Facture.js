@@ -13,13 +13,18 @@ export default class Facture{
         this.lignes.push(new Ligne())
         this.exercice = exercice
         
-        // Ajout des propriétés de sécurisation
+        // Propriétés de sécurisation
         this.status = 'brouillon' // brouillon, validée, annulée
         this.dateValidation = null
         this.userValidation = null
         this.historique = [] // Pour tracer les modifications
         this.factureDavoir = null // Référence à une éventuelle facture d'avoir
         this.factureOriginale = null // Pour les factures d'avoir
+        
+        // Propriétés de signature
+        this.signature = null // Données de l'image de signature
+        this.signataireName = null // Nom du signataire
+        this.signatureNotes = null // Notes associées à la validation
     }
 
     // Vérifier si la facture est modifiable
@@ -43,10 +48,20 @@ export default class Facture{
         return Math.round(total * 100) / 100
     }
 
-    // Valider la facture
-    valider(userId = 'system') {
+    // Valider la facture avec signature
+    valider(validationData) {
         if (this.status === 'validée') {
             throw new Error('Cette facture est déjà validée')
+        }
+
+        // Vérifier que la signature est présente
+        if (!validationData.signature) {
+            throw new Error('La signature est requise pour valider la facture')
+        }
+
+        // Vérifier que le nom du signataire est présent
+        if (!validationData.userFullName) {
+            throw new Error('Le nom du signataire est requis pour valider la facture')
         }
 
         // Calculer le total si nécessaire
@@ -54,13 +69,22 @@ export default class Facture{
             this.ht = this.calculerTotal()
         }
 
+        // Enregistrer les informations de signature
+        this.signature = validationData.signature
+        this.signataireName = validationData.userFullName
+        this.signatureNotes = validationData.validationNotes || ''
+
         // Changement de statut
         this.status = 'validée'
-        this.dateValidation = new Date().toISOString()
-        this.userValidation = userId
+        this.dateValidation = validationData.validationDate || new Date().toISOString()
+        this.userValidation = validationData.userFullName
 
         // Ajouter à l'historique
-        this.ajouterHistorique(userId, 'validation', 'Facture validée et verrouillée')
+        this.ajouterHistorique(
+            validationData.userFullName, 
+            'validation', 
+            `Facture validée et verrouillée par ${validationData.userFullName}`
+        )
 
         return true
     }

@@ -1,12 +1,14 @@
 import { useForm } from "react-hook-form";
 import { useEffect, useState, memo } from "react";
 import LigneFacture from "./LigneFacture.jsx";
+import ValidationModal from "./ValidationModal.jsx";
 import { Link } from "react-router-dom";
 import "./Formfacture.css";
 
 const FormFacture = memo(function FormFacture(props) {
   const [clients, setClients] = useState([]);
   const [estValidee, setEstValidee] = useState(false);
+  const [showValidationModal, setShowValidationModal] = useState(false);
 
   useEffect(() => {
     const data = localStorage.getItem("amaya");
@@ -43,10 +45,20 @@ const FormFacture = memo(function FormFacture(props) {
     props.traiter(data);
   };
 
-  const validerDefinitivement = () => {
-    if (window.confirm("Attention : Une fois validée, cette facture ne pourra plus être modifiée. Voulez-vous valider définitivement cette facture ?")) {
-      props.validerDefinitivement && props.validerDefinitivement();
-    }
+  // Ouvrir la fenêtre de validation avec signature
+  const ouvrirValidationModal = () => {
+    setShowValidationModal(true);
+  };
+
+  // Fermer la fenêtre de validation
+  const fermerValidationModal = () => {
+    setShowValidationModal(false);
+  };
+
+  // Gérer la validation finale avec signature
+  const handleValidationComplete = (validationData) => {
+    props.validerDefinitivement && props.validerDefinitivement(validationData);
+    setShowValidationModal(false);
   };
 
   const creerAvoir = () => {
@@ -83,7 +95,7 @@ const FormFacture = memo(function FormFacture(props) {
               <button 
                 type="button" 
                 className="btn btn-primary my-4"
-                onClick={validerDefinitivement}
+                onClick={ouvrirValidationModal}
               >
                 Valider définitivement
               </button>
@@ -256,6 +268,29 @@ const FormFacture = memo(function FormFacture(props) {
         </div>
       )}
 
+      {/* Affichage de la signature si la facture est validée */}
+      {estValidee && props.facture.signature && (
+        <div className="mt-4 mb-4 p-3 border rounded">
+          <h5>Signature de validation</h5>
+          <div className="row">
+            <div className="col-md-6">
+              <p><strong>Signataire :</strong> {props.facture.signataireName}</p>
+              <p><strong>Date :</strong> {new Date(props.facture.dateValidation).toLocaleString()}</p>
+              {props.facture.signatureNotes && (
+                <p><strong>Notes :</strong> {props.facture.signatureNotes}</p>
+              )}
+            </div>
+            <div className="col-md-6 text-center">
+              <img 
+                src={props.facture.signature} 
+                alt="Signature" 
+                style={{ maxHeight: "100px", maxWidth: "100%", border: "1px solid #eee" }} 
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Affichage de l'historique si la facture est validée */}
       {estValidee && props.facture.historique && props.facture.historique.length > 0 && (
         <div className="mt-4">
@@ -281,6 +316,15 @@ const FormFacture = memo(function FormFacture(props) {
             </tbody>
           </table>
         </div>
+      )}
+
+      {/* Modal de validation avec signature */}
+      {showValidationModal && (
+        <ValidationModal 
+          onValidate={handleValidationComplete} 
+          onCancel={fermerValidationModal}
+          factureNum={props.facture.num || "Nouvelle facture"}
+        />
       )}
     </>
   );

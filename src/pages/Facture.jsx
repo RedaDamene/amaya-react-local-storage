@@ -25,7 +25,7 @@ export default function Facture() {
     }
 
     const nom = amaya.facture[indice].num;
-    const test = confirm(`Voulez-vous effacer  ${nom} ?`);
+    const test = confirm(`Voulez-vous effacer ${nom} ?`);
     if (test) {
       amaya.facture.splice(indice, 1);
       setAmaya({ ...amaya });
@@ -92,15 +92,17 @@ export default function Facture() {
           </ol>
         </nav>
 
-        <div className="d-flex justify-content-between align-items-center">
+        <div className="d-flex justify-content-between align-items-center mb-3">
           <h1>Factures</h1>
-          <Link to={`/facture-ajouter`} className="btn btn-success">
-            <i className="fa fa-plus"></i>
-          </Link>
+          <div>
+            <Link to={`/facture-ajouter`} className="btn btn-success">
+              <i className="fa fa-plus"></i> Nouvelle facture
+            </Link>
+          </div>
         </div>
 
         {/* Filtres */}
-        <div className="row mb-3 mt-3">
+        <div className="row mb-3">
           <div className="col-md-6">
             <div className="row">
               <div className="col-md-6">
@@ -153,7 +155,7 @@ export default function Facture() {
                 <th> Client </th>
                 <th> Date </th>
                 <th> Statut </th>
-                <th colSpan="2"> Actions </th>
+                <th colSpan="3"> Actions </th>
               </tr>
             </thead>
             <tbody>
@@ -180,6 +182,15 @@ export default function Facture() {
                         className="btn btn-primary"
                       >
                         <i className="fa fa-edit"></i>
+                      </Link>
+                    </td>
+                    <td>
+                      {/* Bouton pour visualiser le PDF */}
+                      <Link
+                        to={`/facture-pdf/${e.id}`}
+                        className="btn btn-info"
+                      >
+                        <i className="fa fa-file-pdf"></i>
                       </Link>
                     </td>
                     <td>

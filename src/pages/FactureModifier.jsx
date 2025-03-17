@@ -66,14 +66,15 @@ export default function FactureModifier() {
     alert("Facture mise à jour");
   };
 
-  // Validation définitive de la facture
-  const validerDefinitivement = () => {
+  // Validation définitive de la facture avec signature
+  const validerDefinitivement = (validationData) => {
     try {
+      console.log(validationData)
       // S'assurer que tous les champs nécessaires sont remplis
-      if (!facture.client || !facture.num || !facture.crea) {
+      /*if (!facture.client || !facture.num || !facture.crea) {
         alert("Veuillez remplir tous les champs obligatoires avant de valider la facture");
         return;
-      }
+      }*/
       
       // Calculer le total HT
       let totalHT = 0;
@@ -91,8 +92,8 @@ export default function FactureModifier() {
       // Mettre à jour le total
       facture.ht = Math.round(totalHT * 100) / 100;
       
-      // Valider la facture
-      facture.valider('admin'); // Utilisez un identifiant d'utilisateur réel si disponible
+      // Valider la facture avec les données de signature
+      facture.valider(validationData);
       
       setFacture({ ...facture });
       alert("Facture validée avec succès. Elle ne peut plus être modifiée.");
@@ -111,7 +112,7 @@ export default function FactureModifier() {
       }
       
       // Créer la facture d'avoir
-      const avoir = facture.creerFactureDavoir('admin');
+      const avoir = facture.creerFactureDavoir(facture.signataireName || 'admin');
       
       // Ajouter la facture d'avoir à la liste
       amaya.facture.push(avoir);
