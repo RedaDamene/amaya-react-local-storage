@@ -1,102 +1,164 @@
-import {  useRef,useState,memo } from "react";
-import {useFactureStore } from '../../pages/FactureStore'
-import "./Lignefacture.css";
-export default function LigneFacture (props) {
-  console.log('render lignes');
-  const updateLigne = useFactureStore((state) => state.updateLigne)
-  const [total2,setTotal2] = useState('');
-  const ligne1 = useRef('');
-  const ligne2 = useRef('');  
-  const ligne3 = useRef(''); 
-  const prix = useRef(''); 
-  const qt = useRef(''); 
-  const total = useRef(''); 
-  const changer =()=>{
-    // si les champs sont remplis proposer un prix
-    if ( prix.current.value.length >0 && qt.current.value.length >0) {
-      setTotal2(prix.current.value * qt.current.value.replace(/\D/g, '')+' € ?');
-      
-    }
-    updateLigne(props.indice,
-        { ligne1: ligne1.current.value,
-          ligne2: ligne2.current.value,
-          ligne3: ligne3.current.value,
-          prix: prix.current.value,
-          qt: qt.current.value,
-          total: total.current.value
-      });
-    // props.traiterLigne(props.indice,
-    //   { ligne1: ligne1.current.value,
-    //     ligne2: ligne2.current.value,
-    //     ligne3: ligne3.current.value,
-    //     prix: prix.current.value,
-    //     qt: qt.current.value,
-    //     total: total.current.value});
-  }
+import { useState } from "react";
 
-const effacer=()=>{
+export default function LigneFacture(props) {
+  const [ligne, setLigne] = useState(props.ligne);
   
-  console.log(props.indice);
-  props.effacer(props.indice);
-}
-const afficher=()=>{
+  // Récupérer l'état de validation depuis les props
+  const estDesactive = props.disabled || false;
 
-  if ( prix.current.value.length >0 && qt.current.value.length >0) {
-    setTotal2('');
-    total.current.value =prix.current.value * qt.current.value.replace(/\D/g, '');
-  }
-  changer()
-}
+  const majligne1 = (e) => {
+    if (estDesactive) return; // Ne pas modifier si désactivé
+    
+    setLigne({ ...ligne, ligne1: e.target.value });
+    props.ligne.ligne1 = e.target.value;
+  };
+
+  const majligne2 = (e) => {
+    if (estDesactive) return;
+    
+    setLigne({ ...ligne, ligne2: e.target.value });
+    props.ligne.ligne2 = e.target.value;
+  };
+
+  const majligne3 = (e) => {
+    if (estDesactive) return;
+    
+    setLigne({ ...ligne, ligne3: e.target.value });
+    props.ligne.ligne3 = e.target.value;
+  };
+
+  const majprix = (e) => {
+    if (estDesactive) return;
+    
+    setLigne({ ...ligne, prix: e.target.value });
+    props.ligne.prix = e.target.value;
+
+    // Recalcul du total
+    let prix = e.target.value;
+    let qt = ligne.qt || 0;
+    let total = (parseFloat(prix || 0) * parseFloat(qt)).toFixed(2);
+    props.ligne.total = total;
+  };
+
+  const majqt = (e) => {
+    if (estDesactive) return;
+    
+    setLigne({ ...ligne, qt: e.target.value });
+    props.ligne.qt = e.target.value;
+
+    // Recalcul du total
+    let prix = ligne.prix || 0;
+    let qt = e.target.value;
+    let total = (parseFloat(prix) * parseFloat(qt || 0)).toFixed(2);
+    props.ligne.total = total;
+  };
+
+  const effacer = () => {
+    if (estDesactive) {
+      alert("Impossible de supprimer une ligne d'une facture validée");
+      return;
+    }
+    props.effacer(props.indice);
+  };
+
   return (
-    <>
-      <div className="row mt-2">
-        <div className="col-4 pt-2 pb-3 bg-gris">
-          <label>Tâches</label>
-          <div className="form-floating mt-4 mb-3">
-            <input ref={ligne1} onChange={changer}   className="form-control" id="ligne1" defaultValue={props.ligne.ligne1} />
-            <label htmlFor="ligne1">Ligne 1</label>
-          </div>
-          <div className="form-floating mb-3">
-            <input ref={ligne2}  onChange={changer} className="form-control" id="ligne2" defaultValue={props.ligne.ligne2} />
-            <label htmlFor="ligne2">Ligne 2</label>
-          </div>
-          <div className="form-floating mb-3">
-            <input ref={ligne3}  onChange={changer} className="form-control" id="ligne3"  defaultValue={props.ligne.ligne3}/>
-            <label htmlFor="ligne3">Ligne 3</label>
+    <div className="container gris">
+      <div className="row">
+        <div className="col-5">
+          <div className="row">
+            <div className="col-12 pt-2 designations">
+              <div className="form-floating mb-1">
+                <input
+                  onChange={majligne1}
+                  value={ligne.ligne1 || ""}
+                  type="text"
+                  className="form-control"
+                  id="floatingInput"
+                  placeholder="ligne 1"
+                  disabled={estDesactive}
+                />
+                <label htmlFor="floatingInput">Ligne 1</label>
+              </div>
+              <div className="form-floating mb-1">
+                <input
+                  onChange={majligne2}
+                  value={ligne.ligne2 || ""}
+                  type="text"
+                  className="form-control"
+                  id="floatingInput"
+                  placeholder="ligne 2"
+                  disabled={estDesactive}
+                />
+                <label htmlFor="floatingInput">Ligne 2</label>
+              </div>
+              <div className="form-floating mb-1">
+                <input
+                  onChange={majligne3}
+                  value={ligne.ligne3 || ""}
+                  type="text"
+                  className="form-control"
+                  id="floatingInput"
+                  placeholder="ligne 3"
+                  disabled={estDesactive}
+                />
+                <label htmlFor="floatingInput">Ligne 3</label>
+              </div>
+            </div>
           </div>
         </div>
-        <div className="col-2 pt-2 bg-gris2">
-          <label className="mb-5">Prix</label>
-          <div className="form-floating mt-5">
-            <input ref={prix} type="number"  onChange={changer} className="form-control" id="prix"  defaultValue={props.ligne.prix}/>
-            <label htmlFor="prix">Prix unitaire en €</label>
+        <div className="col-7 tarifs">
+          <div className="row mt-2">
+            <div className="col-2 mt-4">
+              <div className="form-floating mb-3">
+                <input
+                  onChange={majqt}
+                  value={ligne.qt || ""}
+                  type="text"
+                  className="form-control"
+                  id="floatingInput"
+                  placeholder="qt"
+                  disabled={estDesactive}
+                />
+                <label htmlFor="floatingInput">Quantité</label>
+              </div>
+            </div>
+            <div className="col-2 mt-4">
+              <div className="form-floating mb-3">
+                <input
+                  onChange={majprix}
+                  value={ligne.prix || ""}
+                  type="text"
+                  className="form-control"
+                  id="floatingInput"
+                  placeholder="prix"
+                  disabled={estDesactive}
+                />
+                <label htmlFor="floatingInput">Prix</label>
+              </div>
+            </div>
+            <div className="col-3 mt-4">
+              <div className="form-floating mb-3">
+                <input
+                  value={(parseFloat(ligne.prix || 0) * parseFloat(ligne.qt || 0)).toFixed(2)}
+                  type="text"
+                  className="form-control bg-light"
+                  id="floatingInput"
+                  placeholder="total"
+                  readOnly
+                />
+                <label htmlFor="floatingInput">Total</label>
+              </div>
+            </div>
+            <div className="col-1 offset-3 mt-5">
+              {!estDesactive && (
+                <button onClick={effacer} className="btn btn-danger">
+                  <i className="fas fa-trash-alt"></i>
+                </button>
+              )}
+            </div>
           </div>
-        </div>
-
-        <div className="col-2 pt-2 bg-gris">
-          <label className="mb-5">Quantité</label>
-          <div className="form-floating mt-5">
-            <input ref={qt}  onChange={changer} className="form-control" id="qt"  defaultValue={props.ligne.qt} />
-            <label htmlFor="qt">nb Heures ou nb Jours</label>
-          </div>
-        </div>
-        <div className="col-2 pt-2 bg-gris2">
-          <label className="mb-5">
-            Total
-          </label>
-          <p onClick={afficher} className="mt-3 mb-0 text-center help text-primary">{total2 ? total2 : '_'}</p>
-          <div className="form-floating mt-2">
-            <input ref={total} type="number"  onChange={changer}  className="form-control" id="total"  defaultValue={props.ligne.total}/>
-            <label htmlFor="total">total en €</label>
-          </div>
-        </div>
-        <div className="col-2 pt-5 bg-gris">
-          <br /><br /><br />
-          <button onClick={effacer} className="mt-4 ms-5 btn btn-warning">
-            <i className="fas fa-trash"></i>
-          </button>
         </div>
       </div>
-    </>
+    </div>
   );
-};
+}

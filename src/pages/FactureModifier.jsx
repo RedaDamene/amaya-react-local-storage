@@ -1,101 +1,166 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import Nav from "../components/Nav.jsx";
 import Footer from "../components/Footer.jsx";
-import Formfacture from "../components/forms/FormFacture.jsx";
-import { Link } from "react-router-dom";
-import { useParams, useNavigate } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom";
+import FormFacture from "../components/forms/FormFacture";
+import Facture from "../models/Facture";
 import Ligne from "../models/Ligne";
-import {useFactureStore } from './FactureStore.js'
-import {myFacturePdf} from "../components/pdf/myFacturePdf.js";
-export default function factureModifier() {
-  const navigate = useNavigate();
+
+export default function FactureModifier() {
   const { id } = useParams();
-  const [facture, setFacture] = useState({});
-  const [client, setClient] = useState({});
- 
-  const ht = useFactureStore((state) => state.ht)
-  const ttc = useFactureStore((state) => state.ttc)
-  const tva = useFactureStore((state) => state.tva)
-  const lignes = useFactureStore((state) => state.lignes)
-  const updateHT = useFactureStore((state) => state.updateHT)
-  const updateLignes = useFactureStore((state) => state.updateLignes)
-  
+  const [facture, setFacture] = useState(null);
   const [amaya, setAmaya] = useState({});
+  const navigate = useNavigate();
 
   useEffect(() => {
     const data = localStorage.getItem("amaya");
     if (data) {
-      const amaya2 = JSON.parse(data);
-      setAmaya(amaya2);
-      const objFacture = amaya2.facture.find((c) => c.id == id);
-      //console.log("use Effect", obj);
-      const cl = amaya2.client.find((c) => c.id == objFacture.client);
-      setClient(cl);
-      setFacture(objFacture);
-      updateHT(objFacture.ht);
-      updateLignes(objFacture.lignes)
-     
+      setAmaya(JSON.parse(data));
+      const parsed = JSON.parse(data);
+      const facture = parsed.facture.find((e) => e.id == id);
       
+      // Recréer une instance de Facture avec les méthodes
+      if (facture) {
+        const factureInstance = new Facture(facture.exercice);
+        Object.assign(factureInstance, facture);
+        
+        // S'assurer que les lignes sont des instances de Ligne
+        if (factureInstance.lignes && factureInstance.lignes.length > 0) {
+          factureInstance.lignes = factureInstance.lignes.map(ligneData => {
+            const ligne = new Ligne();
+            Object.assign(ligne, ligneData);
+            return ligne;
+          });
+        }
+        
+        // Initialiser l'historique si nécessaire
+        if (!factureInstance.historique) {
+          factureInstance.historique = [];
+        }
+        
+        setFacture(factureInstance);
+      }
     } else {
-      // redirige
+      alert("Pas de données dans localStorage");
     }
-  }, []);
-const generatePDF=()=>{
+  }, [id]);
 
-  myFacturePdf(facture,client);
-}
+  useEffect(() => {
+    if (amaya?.facture && facture) {
+      const index = amaya.facture.findIndex((e) => e.id == id);
+      if (index !== -1) {
+        amaya.facture[index] = facture;
+        localStorage.setItem("amaya", JSON.stringify(amaya));
+      }
+    }
+  }, [facture]);
+
   const traiter = (data) => {
-    const factureM = {
-      ...data,
-      id: new Date().getTime(),
-      lignes: lignes,
-      ht: ht
-    };
-    const indice = amaya.facture.findIndex((a) => a.id == id);
-    amaya.facture[indice] = factureM;
-    localStorage.setItem("amaya", JSON.stringify(amaya));
-    navigate("/facture");
+    // Vérifier si la facture est validée
+    if (facture.status === 'validée') {
+      alert("Cette facture est validée et ne peut plus être modifiée");
+      return;
+    }
+    
+    setFacture({ ...facture, ...data });
+    alert("Facture mise à jour");
   };
-  // const traiterLigne = (indice, ligne) => {
-  //   console.log("traiter");
 
-  //   lignes[indice] = ligne;
-  //   let totalCalculer = 0;
-  //   lignes.current.map((l) => {
-  //     if (l.total.length > 0) {
-  //       totalCalculer += parseFloat(l.total);
-  //     }
-  //   });
-  //   const total2 = {};
-  //   total2.ht = parseFloat(totalCalculer).toFixed(2);
-  //   total2.ttc = parseFloat(totalCalculer) * 1.2;
-  //   total2.tva = parseFloat(totalCalculer) * 0.2;
-  //   setTotal(total2);
-  // };
-  const ajouterLigne = () => {
-    const facture2 = { ...facture };
-    facture2.lignes =lignes
-    if (facture2.lignes.length < 4) {
-      facture2.lignes.push(new Ligne());
-      setFacture(facture2);
-    } else {
-      alert("4 lignes maximum");
+  // Validation définitive de la facture
+  const validerDefinitivement = () => {
+    try {
+      // S'assurer que tous les champs nécessaires sont remplis
+      if (!facture.client || !facture.num || !facture.crea) {
+        alert("Veuillez remplir tous les champs obligatoires avant de valider la facture");
+        return;
+      }
+      
+      // Calculer le total HT
+      let totalHT = 0;
+      facture.lignes.forEach(ligne => {
+        const prix = parseFloat(ligne.prix || 0);
+        const qt = parseFloat(ligne.qt || 0);
+        totalHT += prix * qt;
+      });
+      
+      // Ajouter les charges
+      if (facture.charges) {
+        totalHT += parseFloat(facture.charges);
+      }
+      
+      // Mettre à jour le total
+      facture.ht = Math.round(totalHT * 100) / 100;
+      
+      // Valider la facture
+      facture.valider('admin'); // Utilisez un identifiant d'utilisateur réel si disponible
+      
+      setFacture({ ...facture });
+      alert("Facture validée avec succès. Elle ne peut plus être modifiée.");
+    } catch (error) {
+      alert(`Erreur lors de la validation: ${error.message}`);
     }
   };
+
+  // Créer une facture d'avoir
+  const creerAvoir = () => {
+    try {
+      // Vérifier que la facture est validée
+      if (facture.status !== 'validée') {
+        alert("Seules les factures validées peuvent avoir une facture d'avoir");
+        return;
+      }
+      
+      // Créer la facture d'avoir
+      const avoir = facture.creerFactureDavoir('admin');
+      
+      // Ajouter la facture d'avoir à la liste
+      amaya.facture.push(avoir);
+      
+      // Mettre à jour la facture originale avec la référence à l'avoir
+      const index = amaya.facture.findIndex(f => f.id == facture.id);
+      if (index !== -1) {
+        amaya.facture[index] = facture;
+      }
+      
+      // Sauvegarder dans localStorage
+      localStorage.setItem("amaya", JSON.stringify(amaya));
+      
+      // Rediriger vers la facture d'avoir
+      alert("Facture d'avoir créée avec succès");
+      navigate(`/facture-modifier/${avoir.id}`);
+    } catch (error) {
+      alert(`Erreur lors de la création de l'avoir: ${error.message}`);
+    }
+  };
+
+  const ajouter = () => {
+    // Vérifier si la facture est validée
+    if (facture.status === 'validée') {
+      alert("Impossible d'ajouter des lignes à une facture validée");
+      return;
+    }
+    
+    const l = new Ligne();
+    const lignes = [...facture.lignes, l];
+    setFacture({ ...facture, lignes });
+  };
+
   const effacer = (indice) => {
-    const facture2 = { ...facture };
-    facture2.lignes =lignes
-    if (facture2.lignes.length > 1) {
-      facture2.lignes.splice(indice, 1);
-      setFacture(facture2);
-    } else {
-      alert("Il faut au moins une ligne");
+    // Vérifier si la facture est validée
+    if (facture.status === 'validée') {
+      alert("Impossible de supprimer des lignes d'une facture validée");
+      return;
     }
+    
+    const lignes = [...facture.lignes];
+    lignes.splice(indice, 1);
+    setFacture({ ...facture, lignes });
   };
+
   return (
     <>
       <Nav active={"facture"}></Nav>
-      <div className="px-5 container bg-light pb-5">
+      <div className="ps-5 container bg-light ">
         <nav aria-label="breadcrumb">
           <ol className="breadcrumb pt-3">
             <li className="breadcrumb-item">
@@ -105,48 +170,24 @@ const generatePDF=()=>{
             </li>
             <li className="breadcrumb-item">
               <Link to={`/facture`} className="link-success">
-                Liste des factures
+                Factures
               </Link>
             </li>
             <li className="breadcrumb-item active" aria-current="page">
-              Modifier une facture
+              {facture && facture.num 
+                ? `Facture ${facture.num} ${facture.status === 'validée' ? '(Validée)' : ''}` 
+                : "Facture"}
             </li>
           </ol>
         </nav>
-
-        <h1 className="py-2">Modifier une facture</h1>
-        <section className="col-12">
-        <div className="text-end">
-        <button type="submit" onClick={generatePDF} className="mt-2 btn btn-danger">
-        <i className="fas fa-file-pdf "></i>  <i className="fas fa-eye "></i>
-          </button>
-      
-          </div>
-          <div className="row mt-2 bg-gris p-2">
-            <div className="col-4">
-              <h4>{ht} &euro; HT</h4>
-            </div>
-            <div className="col-4">
-              <h4>
-                <span className="text-success">
-                  {tva} &euro; TVA
-                </span>
-              </h4>
-            </div>
-            <div className="col-4 text-end">
-              <h4>
-                <span className="">{ttc} &euro; TTC</span>
-              </h4>
-            </div>
-          </div>
-        </section>
-        {facture.id && (
-          <Formfacture
+        {facture && (
+          <FormFacture
             facture={facture}
             traiter={traiter}
-           
-            ajouter={ajouterLigne}
+            ajouter={ajouter}
             effacer={effacer}
+            validerDefinitivement={validerDefinitivement}
+            creerAvoir={creerAvoir}
           />
         )}
       </div>
