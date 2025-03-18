@@ -4,12 +4,13 @@ import Footer  from "../components/Footer.jsx";
 import FormExercice  from "../components/forms/FormExercice.jsx";
 import { Link } from "react-router-dom";
 import { useNavigate } from 'react-router-dom'
+import { setEncryptedItem,getDecryptedItem } from '../utils/encryption.js';
 export default function ExerciceAjouter() {
   const [amaya,setAmaya] = useState({});  
   useEffect(() => {
-      const data = localStorage.getItem('amaya');
+      const data = getDecryptedItem('amaya');
       if(data){
-        setAmaya(JSON.parse(data));
+        setAmaya(data);
       }else{
         // redirige
       }
@@ -21,7 +22,7 @@ export default function ExerciceAjouter() {
     console.log(exercice);
     console.log(amaya);
     amaya.exercice.push(exercice);
-    localStorage.setItem('amaya',JSON.stringify(amaya));
+    setEncryptedItem('amaya', amaya);
     setAmaya({...amaya});
     navigate("/exercice");
   }

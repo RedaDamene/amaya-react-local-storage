@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import Nav from "../components/Nav.jsx";
 import Footer from "../components/Footer.jsx";
 import { Link } from "react-router-dom";
+import { setEncryptedItem,getDecryptedItem } from "../utils/encryption.js";
 
 export default function Facture() {
   const [amaya, setAmaya] = useState({});
@@ -9,9 +10,9 @@ export default function Facture() {
   const [exerciceFiltre, setExerciceFiltre] = useState("");
 
   useEffect(() => {
-    const data = localStorage.getItem("amaya");
+    const data = getDecryptedItem("amaya");
     if (data) {
-      setAmaya(JSON.parse(data));
+      setAmaya(data);
     } else {
       // redirige
     }
@@ -29,7 +30,7 @@ export default function Facture() {
     if (test) {
       amaya.facture.splice(indice, 1);
       setAmaya({ ...amaya });
-      localStorage.setItem("amaya", JSON.stringify(amaya));
+      setEncryptedItem("amaya", amaya);
     }
   };
 

@@ -5,6 +5,7 @@ import { Link, useParams, useNavigate } from "react-router-dom";
 import FormFacture from "../components/forms/FormFacture";
 import Facture from "../models/Facture";
 import Ligne from "../models/Ligne";
+import { setEncryptedItem,getDecryptedItem } from "../utils/encryption.js";
 
 export default function FactureModifier() {
   const { id } = useParams();
@@ -13,10 +14,10 @@ export default function FactureModifier() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const data = localStorage.getItem("amaya");
+    const data = getDecryptedItem("amaya");
     if (data) {
-      setAmaya(JSON.parse(data));
-      const parsed = JSON.parse(data);
+      setAmaya(data);
+      const parsed = data;
       const facture = parsed.facture.find((e) => e.id == id);
       
       // Recréer une instance de Facture avec les méthodes
@@ -50,7 +51,7 @@ export default function FactureModifier() {
       const index = amaya.facture.findIndex((e) => e.id == id);
       if (index !== -1) {
         amaya.facture[index] = facture;
-        localStorage.setItem("amaya", JSON.stringify(amaya));
+        setEncryptedItem("amaya", amaya);
       }
     }
   }, [facture]);
@@ -124,7 +125,7 @@ export default function FactureModifier() {
       }
       
       // Sauvegarder dans localStorage
-      localStorage.setItem("amaya", JSON.stringify(amaya));
+      setEncryptedItem("amaya",amaya);
       
       // Rediriger vers la facture d'avoir
       alert("Facture d'avoir créée avec succès");

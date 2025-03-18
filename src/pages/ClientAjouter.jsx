@@ -4,12 +4,13 @@ import Footer  from "../components/Footer.jsx";
 import FormClient  from "../components/forms/FormClient.jsx";
 import { Link } from "react-router-dom";
 import { useNavigate } from 'react-router-dom'
+import { setEncryptedItem,getDecryptedItem } from '../utils/encryption.js';
 export default function ClientAjouter() {
   const [amaya,setAmaya] = useState({});  
   useEffect(() => {
-      const data = localStorage.getItem('amaya');
+      const data = getDecryptedItem('amaya');
       if(data){
-        setAmaya(JSON.parse(data));
+        setAmaya(data);
       }else{
         // redirige
       }
@@ -20,7 +21,7 @@ export default function ClientAjouter() {
     const client = {...data,id:new Date().getTime()}
     console.log(client);
     amaya.client.push(client);
-    localStorage.setItem('amaya',JSON.stringify(amaya));
+    setEncryptedItem('amaya',amaya);
     setAmaya({...amaya});
     navigate("/client");
   }

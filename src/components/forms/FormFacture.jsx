@@ -4,6 +4,7 @@ import LigneFacture from "./LigneFacture.jsx";
 import ValidationModal from "./ValidationModal.jsx";
 import { Link } from "react-router-dom";
 import "./Formfacture.css";
+import { getDecryptedItem } from "../../utils/encryption.js";
 
 const FormFacture = memo(function FormFacture(props) {
   const [clients, setClients] = useState([]);
@@ -11,9 +12,9 @@ const FormFacture = memo(function FormFacture(props) {
   const [showValidationModal, setShowValidationModal] = useState(false);
 
   useEffect(() => {
-    const data = localStorage.getItem("amaya");
+    const data = getDecryptedItem("amaya");
     if (data) {
-      setClients(JSON.parse(data).client);
+      setClients(data.client);
     }
    
     // Vérifier si la facture est validée

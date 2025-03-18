@@ -1,15 +1,16 @@
 import { useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { myFacturePdf } from "../components/pdf/myFacturePdf";
+import { getDecryptedItem } from "../utils/encryption";
 
 export default function FacturePdf() {
   const { id } = useParams();
   const navigate = useNavigate();
 
   useEffect(() => {
-    const data = localStorage.getItem("amaya");
+    const data = getDecryptedItem("amaya");
     if (data) {
-      const amaya = JSON.parse(data);
+      const amaya = data;
       const facture = amaya.facture.find((f) => f.id == id);
 
       if (facture) {

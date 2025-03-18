@@ -4,15 +4,16 @@ import Footer from "../components/Footer.jsx";
 import FormExercice from "../components/forms/FormExercice.jsx";
 import { Link } from "react-router-dom";
 import { useParams, useNavigate } from "react-router-dom";
+import { setEncryptedItem,getDecryptedItem } from "../utils/encryption.js";
 export default function ExerciceModifier() {
   const navigate = useNavigate();
   const { id } = useParams();
   const [exercice, setExercice] = useState({});
   const [amaya, setAmaya] = useState({});
   useEffect(() => {
-    const data = localStorage.getItem("amaya");
+    const data = getDecryptedItem("amaya");
     if (data) {
-      const amaya2 = JSON.parse(data);
+      const amaya2 = data;
       setAmaya(amaya2);
       const obj = amaya2.exercice.find((c) => c.id == id);
       //console.log(obj);
@@ -27,7 +28,7 @@ export default function ExerciceModifier() {
     const indice = amaya.exercice.findIndex((a) => a.id == id);
     amaya.exercice[indice] = exerciceM;
 
-    localStorage.setItem("amaya", JSON.stringify(amaya));
+    setEncryptedItem("amaya",amaya);
     setAmaya({ ...amaya });
     navigate("/exercice");
   };

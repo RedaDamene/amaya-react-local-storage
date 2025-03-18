@@ -1,14 +1,17 @@
 import { useEffect, useState } from "react";
 import Nav from "../components/Nav.jsx";
 import Footer from "../components/Footer.jsx";
+import { getDecryptedItem, setEncryptedItem } from "../utils/encryption.js"; // Importe les fonctions de chiffrement
+
 export default function Login() {
   const [amaya, setAmaya] = useState({});
+  
   useEffect(() => {
-    const data = localStorage.getItem("amaya");
+    // Utilise getDecryptedItem au lieu de localStorage.getItem directement
+    const data = getDecryptedItem("amaya");
+    
     if (data) {
-      setAmaya(JSON.parse(data));
-      // defini l'annee en cours
-
+      setAmaya(data); // Plus besoin de JSON.parse car getDecryptedItem le fait déjà
     } else {
       // Exercice 2024  Du 01 Juillet 2024 au 30 Juin 2025
       const obj = {
@@ -59,10 +62,13 @@ export default function Login() {
         ],
         devis: [],
       };
-      localStorage.setItem("amaya", JSON.stringify(obj));
-   
+      
+      // Utilise setEncryptedItem au lieu de localStorage.setItem
+      setEncryptedItem("amaya", obj);
+      setAmaya(obj);
     }
   }, []);
+  
   return (
     <>
       <Nav active={"home"}></Nav>

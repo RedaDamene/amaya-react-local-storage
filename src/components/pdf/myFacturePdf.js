@@ -18,6 +18,8 @@ import autoTable from 'jspdf-autotable'
 import open from "../../assets/facture-pdf/OpenSans-Regular.ttf";
 import openB from "../../assets/facture-pdf/OpenSans-Bold.ttf";
 
+import { getDecryptedItem } from "../../utils/encryption";
+
 const formatNumber= (number)=>
 {
     number = parseFloat(number).toFixed(2) + '';
@@ -33,8 +35,8 @@ const formatNumber= (number)=>
 
 export const myFacturePdf = (facture, client) => {
   const pdf = new jsPDF();
-  const data = localStorage.getItem("amaya");
-  const amaya = JSON.parse(data);
+  const data = getDecryptedItem("amaya");
+  const amaya = data;
   if (data) {
     pdf.setProperties({
       title: "FACTURE " + facture.num,
